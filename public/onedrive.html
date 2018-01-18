@@ -8,31 +8,34 @@
 </head>
 <script type="text/javascript" src="https://js.live.net/v7.2/OneDrive.js"></script>
 <script>
+  function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
   function oneDriveChildHandler() {
+    let handleMessages = (() => {
+      var _ref = _asyncToGenerator(function* (event) {
+        // To prevent other domains as well as onedrive library messages
+        if (event.origin !== window.origin || !event.data.includes("clientId")) {
+          return;
+        }
+        const data = JSON.parse(event.data);
+        const resp = yield getFiles(data);
+        const parent = window.opener || window.parent;
+        parent.postMessage(JSON.stringify(resp), window.origin);
+      });
+
+      return function handleMessages(_x) {
+        return _ref.apply(this, arguments);
+      };
+    })();
+
     function getFiles(options) {
       return new Promise((res, rej) => {
-        window.OneDrive.open(
-          Object.assign(
-            {
-              success: files => res([undefined, files]),
-              error: e => res([e, undefined]),
-              cancel: () => res([])
-            },
-            options
-          )
-        );
+        window.OneDrive.open(Object.assign({
+          success: files => res([undefined, files]),
+          error: e => res([e, undefined]),
+          cancel: () => res([])
+        }, options));
       });
-    }
-
-    async function handleMessages(event) {
-      // To prevent other domains as well as onedrive library messages
-      if (event.origin !== window.origin || !event.data.includes("clientId")) {
-        return;
-      }
-      const data = JSON.parse(event.data);
-      const resp = await getFiles(data);
-      const parent = window.opener || window.parent;
-      parent.postMessage(JSON.stringify(resp), window.origin);
     }
 
     window.addEventListener("message", handleMessages);
